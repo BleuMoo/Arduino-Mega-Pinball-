@@ -69,7 +69,7 @@ void GameOver(){
   lcd.setCursor(6, 0);
   lcd.print(score);
   RecordScore = EEPROM.read(1);
-  //EEPROM.get(1, RecordScore); //read from eeprom recor points
+  
   delayMicroseconds(10);
   if(score > RecordScore){
     lcd.print("New Record!!");
