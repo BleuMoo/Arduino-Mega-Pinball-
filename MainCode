@@ -1,0 +1,89 @@
+#include <Wire.h> 
+#include <LCD_I2C.h>
+
+#include <SPI.h>
+#include  <SdFat.h>
+#include <FreeStack.h>
+//and the MP3 Shield Library
+//#include  <SFEMP3Shield.h>
+#include <EEPROMex.h>
+#include <Arduino.h>
+
+//SdFat sd;     //May add SD card to store the scores
+//SFEMP3Shield  MP3player;//May add MP3 player
+
+LCD_I2C lcd(0x27, 20, 4);  // Set the LCD I2C address
+
+
+long score = 0; 
+int MaxBalls = 0;
+long RecordScore = 0;
+void setup() {
+  lcd.begin();
+  lcd.backlight();
+  lcd.clear();
+  lcd.print("SPACE CATS");
+  lcd.setCursor(0,1);
+  lcd.print("Let's Play");
+  delay(5000);
+  lcd.clear();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if(gameOn == 1){
+    lcd.print("Game ON Get Ready!");
+    delay(x);
+    MaxBalls - 1;
+    game();
+  }
+  
+}
+void game(){
+  //game will happen here
+}
+
+void ScoreDisplay(){
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SPACE CATS");
+  lcd.setCursor(0,1);
+  lcd.print("SCORE:");  //Dispaly score
+  lcd.setCursor(8,1);
+  lcd.print(score);
+  lcd.setCursor(0,2);
+  lcd.print("Balls:");
+  lcd.setCursor(8,2);
+  lcd.print(MaxBalls);
+  
+  delayMicroseconds(10);
+}
+
+void GameOver(){
+  lcd.clear();
+  lcd.setCursor(5, 0);
+  lcd.print("GAME OVER")
+  lcd.setCursor(0, 1);
+  lcd.print("Score:");
+  lcd.setCursor(6, 0);
+  lcd.print(score);
+  EEPROM.get(1, RecordScore); //read from eeprom recor points
+  delayMicroseconds(10);
+  if(score > RecordScore){
+    lcd.print("New Record!!");
+  //  digitalWrite(pin x, HIGH); //Do something with I/Os
+    lcd.setCursor(0, 1);
+    lcd.print(score);
+    EEPROM.update(1, score); //update record points to eeprom
+    delay(10000); // wait 10s to do something
+  }
+  
+}
+void ResetGame(){
+  score = 0;
+  MaxBalls = 3;
+  lcd.setCursor(0,0);
+  lcd.print("SPACE CATS");  //Game reset
+  lcd.setCursor(0,1);
+  lcd.print("Let's Play!");
+}
