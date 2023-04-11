@@ -18,6 +18,7 @@ LCD_I2C lcd(0x27, 20, 4);  // Set the LCD I2C address
 long score = 0; 
 int MaxBalls = 0;
 long RecordScore = 0;
+int gameOn = 0;
 void setup() {
   lcd.begin();
   lcd.backlight();
@@ -31,13 +32,13 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if(gameOn == 1){
+ /* if(gameOn == 1){
     lcd.print("Game ON Get Ready!");
     delay(x);
     MaxBalls - 1;
     game();
   }
-  
+  */
 }
 void game(){
   //game will happen here
@@ -62,12 +63,13 @@ void ScoreDisplay(){
 void GameOver(){
   lcd.clear();
   lcd.setCursor(5, 0);
-  lcd.print("GAME OVER")
+  lcd.print("GAME OVER");
   lcd.setCursor(0, 1);
   lcd.print("Score:");
   lcd.setCursor(6, 0);
   lcd.print(score);
-  EEPROM.get(1, RecordScore); //read from eeprom recor points
+  RecordScore = EEPROM.read(1);
+  //EEPROM.get(1, RecordScore); //read from eeprom recor points
   delayMicroseconds(10);
   if(score > RecordScore){
     lcd.print("New Record!!");
