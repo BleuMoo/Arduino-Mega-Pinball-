@@ -24,74 +24,107 @@ int relay_count = 16;
 int relay[]={22,23,24,25,26,27,28,29,30,31,32,33,4,35,36,37}; //relay outout
 int point[]={40,41,42,43,44,45,46,47,48,49,50,51,52,53}; //inputs to collect points
 
-int Start = 16;
-int Stop = 17;
-int Reset = 18;
+const int Start = 2;
+int Start_game = 0;
+const int Stop = 3;
+int Stop_game = 0;
+const int Reset = 4;
+int Reset_game = 0;
 
-
+int First_scan = 0;
 void setup() {
   Serial.begin(9600);
+  pinMode(Start, INPUT);
+  pinMode(Reset, INPUT);
   lcd.begin();
   lcd.backlight();
   lcd.clear();
   lcd.print("SPACE CATS");
   lcd.setCursor(0,1);
   lcd.print("Let's Play");
+  lcd.setCursor(0,2);
+  lcd.print("Please Wait");
   delay(5000);
   lcd.clear();
   //still need to declear I/Os pinMode
+
 }
 
 void loop() {
- 
-  if(Start == 1 && MaxBalls != 0 && gameOn==0){
+  if(First_scan == 0){
+    lcd.clear();
+    First_scan ++;
+  }
+  lcd.setCursor(0,0);
+  lcd.print("Press Start");
+  Start_game = digitalRead(Start);
+  if(Start_game == HIGH){
     gameOn = 1;
     lcd.clear();
     lcd.print("Game starting");
-    delay(5000);
+    delay(2000);
+    lcd.clear();
   }
  
 
  
   if(gameOn == 1){
-    lcd.print("Game ON Get Ready!");
-    delay(750);
+    lcd.clear();
+    lcd.print("Game ON Get Ready!");  
     //relese the ball
-    MaxBalls - 1;
+    //MaxBalls --;
+    lcd.setCursor(0,1);
     lcd.print("Balls left" );
-    lcd.print(MaxBalls);
+    lcd.print(MaxBalls);  
+    delay(5000);
+    lcd.clear();
     game();
   }
-
+  delay(1);
 }
-void game(){
+void game(){ 
   //game will happen here
-
-  
-  while(Reset ==1){   //reset button has been pressed for 5s. and program going to main loop
+  Reset_game = digitalRead(Reset);
+  while(Reset_game == HIGH){   //reset button has been pressed for 5s. and program going to main loop
     lcd.clear();
     lcd.print("Game reseting");   
-    delay(5000);
+    delay(2500);
+    gameOn = 0;
     return;
   }
-  gameOn = 0;//wehen you lose gameOn chages to 0 and program going back to main loop
-  void loop();
+  Stop_game = digitalRead(Stop); //lost ball
+  if(Stop_game == 1){
+    lcd.clear();
+    lcd.print("Ball Lost!");
+    delay(5000);
+    MaxBalls --;
+    gameOn = 1;
+    lcd.clear();
+    Stop_game = digitalRead(Stop);
+    if(MaxBalls == 0){
+      GameOver();
+    }
+    return;
+  }
+
+  //if(you loose){
+  //gameOn = 0;//wehen you lose gameOn chages to 0 and program going back to main loop
+  //return;
+  ScoreDisplay();
 }
 
 void ScoreDisplay(){
-  lcd.clear();
   lcd.setCursor(5,0);
   lcd.print("SPACE CATS");
   lcd.setCursor(0,1);
   lcd.print("SCORE:");  //Dispaly score
-  lcd.setCursor(8,1);
+  lcd.setCursor(6,1);
   lcd.print(score);
   lcd.setCursor(0,2);
   lcd.print("Balls:");
-  lcd.setCursor(8,2);
+  lcd.setCursor(6,2);
   lcd.print(MaxBalls);
-  
-  delayMicroseconds(10);
+  game();
 }
 
 void GameOver(){
@@ -110,16 +143,18 @@ void GameOver(){
     lcd.setCursor(0, 1);
     lcd.print(score);
     EEPROM.update(1, score); //update record points to eeprom
-    delay(10000); // wait 10s to do something
+    delay(20); // wait 10s to do something
   }
+  delay(5000);
   ResetGame();
   
 }
 void ResetGame(){
   score = 0;
-  MaxBalls = 3;
+  MaxBalls = 5;
   lcd.setCursor(0,0);
   lcd.print("SPACE CATS");  //Game reset
   lcd.setCursor(0,1);
   lcd.print("Let's Play!");
+  gameOn = 0;
 }
