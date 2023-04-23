@@ -1,0 +1,45 @@
+// Including the required Arduino libraries
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+#include <SPI.h>
+
+// Uncomment according to your hardware type
+//#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+#define HARDWARE_TYPE MD_MAX72XX::GENERIC_HW
+
+// Defining size, and output pins
+#define MAX_DEVICES 1
+#define CS_PIN 10
+long count = 0;
+int button = 0;
+const int buttonPin = 50;
+// Create a new instance of the MD_Parola class with hardware SPI connection
+MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+
+void setup() {
+	// Intialize the object
+	myDisplay.begin();
+
+  pinMode(buttonPin, INPUT);//varaiable name to change.
+
+	// Set the intensity (brightness) of the display (0-15)
+	myDisplay.setIntensity(0);
+
+	// Clear the display
+	myDisplay.displayClear();
+}
+
+void loop() {
+button = digitalRead(buttonPin);//this code to change to different variables
+ 
+  if (button == HIGH) {
+    count ++;
+    delay(200);
+  } else {
+    digitalWrite(buttonPin, LOW);
+  }
+	myDisplay.setTextAlignment(PA_LEFT);
+	myDisplay.setInvert(false);
+	myDisplay.print(count);
+	delay(200);
+}
