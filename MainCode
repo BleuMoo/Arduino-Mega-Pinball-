@@ -1,18 +1,24 @@
 #include <Wire.h> 
-#include <LCD_I2C.h>
+//#include <LCD_I2C.h>
 
 #include <SPI.h>
-#include  <SdFat.h>
-#include <FreeStack.h>
+//#include  <SdFat.h>
+//#include <FreeStack.h>
+// Including the required Arduino libraries
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+#include <SPI.h>
+
+
 //and the MP3 Shield Library
 //#include  <SFEMP3Shield.h>
-#include <EEPROMex.h>
+//#include <EEPROMex.h>
 #include <Arduino.h>
 
 //SdFat sd;     //May add SD card to store the scores
 //SFEMP3Shield  MP3player;//May add MP3 player
 
-LCD_I2C lcd(0x27, 20, 4);  // Set the LCD I2C address
+//LCD_I2C lcd(0x27, 20, 4);  // Set the LCD I2C address
 
 
 long score = 0; 
@@ -20,16 +26,30 @@ int MaxBalls = 5;
 long RecordScore;
 int gameOn = 0;
 int relay_count = 16;
+const int buttonPin = 50;
 
 int relay[]={22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37}; //relay outout
-int point[]={40,41,42,43,44,45,46,47,48,49,50,51,52,53}; //inputs to collect points
+int point[]={40,41,42,43,44,45,46,47,48,49,53}; //inputs to collect points
+// Uncomment according to your hardware type
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+//#define HARDWARE_TYPE MD_MAX72XX::GENERIC_HW
 
+// Defining size, and output pins
+#define MAX_DEVICES 4
+#define CS_PIN 12
+
+long count = 0;
+int button = 0;
+//const int buttonPin = 50;
+// Create a new instance of the MD_Parola class with hardware SPI connection
+MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 const int Start = 2;
 int Start_game = 0;
 const int Stop = 3;
 int Stop_game = 0;
 const int Reset = 4;
 int Reset_game = 0;
+int lastButtonState = 0; 
 
 int First_scan = 0;
 void setup() {
@@ -37,115 +57,127 @@ void setup() {
   pinMode(Start, INPUT); //set Start pin as input
   pinMode(Reset, INPUT); //set Reset pin as input
   pinMode(Stop, INPUT);  //set Stop (ball lost) as input
-  
-  int i = 0;
-  for(i=0; i < 16; i++){
-    pinMode(relay[i], OUTPUT); //set relays pins as outputs
+  pinMode(buttonPin, INPUT);
+ int i = 0;
+ for(i=0; i < 16; i++){
+   pinMode(relay[i], OUTPUT); //set relays pins as outputs
   }
   
   int j = 0;
   for(j=0; j < 15; j++){
     pinMode(point[j], INPUT); //set point pins as inputs
   }
-  lcd.begin();
-  lcd.backlight();
-  lcd.clear();
-  lcd.print("SPACE CATS");
-  lcd.setCursor(0,1);
-  lcd.print("Let's Play");
-  lcd.setCursor(0,2);
-  lcd.print("Please Wait");
+  myDisplay.begin();
+  //myDisplay.displayClear();
+  myDisplay.print("SPACE CATS");
   delay(5000);
-  lcd.clear();
+  myDisplay.print("Let's Play");
+  delay(5000);
+  myDisplay.print("Please Wait");
+  delay(5000);
+
 }
 
 void loop() {
   if(First_scan == 0){
-    lcd.clear();
+  myDisplay.displayClear();
     First_scan ++;
   }
-  lcd.setCursor(0,0);
-  lcd.print("Press Start");
+
+  myDisplay.print("Press Start");
   Start_game = digitalRead(Start);
   if(Start_game == HIGH){
     gameOn = 1;
-    lcd.clear();
-    lcd.print("Game starting");
+      myDisplay.displayClear();
+    myDisplay.print("Game starting");
     delay(2000);
-    lcd.clear();
+      myDisplay.displayClear();
   }
  
   if(gameOn == 1){
-    lcd.clear();
-    lcd.print("Game ON Get Ready!");  
+      //myDisplay.displayClear();
+    //myDisplay.print("Game ON Get Ready!");  
     //relese the ball
     //MaxBalls --;
-    lcd.setCursor(0,1);
-    lcd.print("Balls left" );
-    lcd.print(MaxBalls);  
-    delay(5000);
-    lcd.clear();
+    //myDisplay.print("Balls left" );
+    //delay(5000);
+    //myDisplay.setTextAlignment(PA_RIGHT);
+    //myDisplay.print(MaxBalls);  
+    //delay(5000);
+     // myDisplay.displayClear();
     game();
+    //currentScore();
   }
   delay(1);
 }
 void game(){ 
   //game will happen here
+
+  button = digitalRead(buttonPin);
+
+  // compare the buttonState to its previous state
+  if (button != lastButtonState) {
+    // if the state has changed, increment the counter
+    if (button == HIGH) {
+    count = count + 1000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+  lastButtonState = button;
+
+  delay(1);
+
   Reset_game = digitalRead(Reset);
   while(Reset_game == HIGH){   //reset button has been pressed for 5s. and program going to main loop
-    lcd.clear();
-    lcd.print("Game reseting");   
-    delay(2500);
+    myDisplay.displayClear();
+    myDisplay.print("Game reseting");   
+    //delay(2500);
     gameOn = 0;
     return;
   }
   Stop_game = digitalRead(Stop); //lost ball
   if(Stop_game == 1){
-    lcd.clear();
-    lcd.print("Ball Lost!");
+    myDisplay.displayClear();
+    myDisplay.print("Ball Lost!");
     delay(5000);
     MaxBalls --;
     gameOn = 1;
-    lcd.clear();
+    myDisplay.displayClear();
     Stop_game = digitalRead(Stop);
     if(MaxBalls == 0){
       GameOver();
     }
-    return;
+    
   }
-  ScoreDisplay();
+  currentScore();
+  
 }
 
-void ScoreDisplay(){
-  lcd.setCursor(5,0);
-  lcd.print("SPACE CATS");
-  lcd.setCursor(0,1);
-  lcd.print("SCORE:");  //Dispaly score
-  lcd.setCursor(6,1);
-  lcd.print(score);
-  lcd.setCursor(0,2);
-  lcd.print("Balls:");
-  lcd.setCursor(6,2);
-  lcd.print(MaxBalls);
+void currentScore(){
+
+  myDisplay.setTextAlignment(PA_RIGHT);
+	myDisplay.print(count);
   game();
 }
 
 void GameOver(){
-  lcd.clear();
-  lcd.setCursor(5, 0);
-  lcd.print("GAME OVER");
-  lcd.setCursor(0, 1);
-  lcd.print("Score:");
-  lcd.setCursor(6, 0);
-  lcd.print(score);
-  RecordScore = EEPROM.read(1);
+  myDisplay.displayClear();
+  myDisplay.print("GAME OVER");
+  delay(2000);
+  myDisplay.print("Score:");
+  delay(2000);
+  myDisplay.print(score);
+  delay(2000);
+  //RecordScore = EEPROM.read(1);
   delayMicroseconds(10);
   if(score > RecordScore){
-    lcd.print("New Record!!");
+  myDisplay.print("New Record!!");
   //  digitalWrite(pin x, HIGH); //Do something with I/Os
-    lcd.setCursor(0, 1);
-    lcd.print(score);
-    EEPROM.update(1, score); //update record points to eeprom
+    //lcd.setCursor(0, 1);
+    //lcd.print(score);
+    //EEPROM.update(1, score); //update record points to eeprom
     delay(20); // wait 10s to do something
   }
   delay(5000);
@@ -155,9 +187,9 @@ void GameOver(){
 void ResetGame(){
   score = 0;
   MaxBalls = 5;
-  lcd.setCursor(0,0);
-  lcd.print("SPACE CATS");  //Game reset
-  lcd.setCursor(0,1);
-  lcd.print("Let's Play!");
+  //lcd.setCursor(0,0);
+  //lcd.print("SPACE CATS");  //Game reset
+  //lcd.setCursor(0,1);
+  //lcd.print("Let's Play!");
   gameOn = 0;
 }
