@@ -1,151 +1,357 @@
 #include <Wire.h> 
-#include <LCD_I2C.h>
+//#include <LCD_I2C.h>
 
 #include <SPI.h>
-#include  <SdFat.h>
-#include <FreeStack.h>
+//#include  <SdFat.h>
+//#include <FreeStack.h>
+// Including the required Arduino libraries
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+
+
+
 //and the MP3 Shield Library
 //#include  <SFEMP3Shield.h>
-#include <EEPROMex.h>
+//#include <EEPROMex.h>
 #include <Arduino.h>
+//int relay[]={22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37}; //relay outout
+//int point[]={40,41,42,43,44,45,46,47,48,49}; //inputs to collect points
+// Uncomment according to your hardware type
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+//#define HARDWARE_TYPE MD_MAX72XX::GENERIC_HW
 
-//SdFat sd;     //May add SD card to store the scores
-//SFEMP3Shield  MP3player;//May add MP3 player
+// Defining size, and output pins
 
-LCD_I2C lcd(0x27, 20, 4);  // Set the LCD I2C address
+#define MAX_DEVICES 4
+#define MAX_ZONES 0
+#define DATA_PIN 51
+#define CLK_PIN 52
+#define CS_PIN 50
+
+//const uint8_t CLK_PIN = 52;   // or SCK
+//const uint8_t DATA_PIN = 51;  // or MOSI
+//const uint8_t CS_PIN = 50;  
+
+// Create a new instance of the MD_Parola class with hardware SPI connection
+MD_Parola  myDisplay = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+
+const int Start = 2;
+const int Stop = 3;
+const int Reset = 4;
+const int dropDownLeft1 = 48;
+const int dropDownLeft2 = 47;
+const int dropDownLeft3 = 46;
+const int dropDownLeftReset = 45;
+const int dropDownRight1 = 44;
+const int dropDownRight2 = 43;
+const int dropDownRight3 = 42;
+const int dropDownRightReset = 41;
+const int dropDownCenter1 = 40;
+const int dropDownCenter2 = 39;
+const int dropDownCenter3 = 38;
+const int dropDownCenterReset = 37;
 
 
+
+int Start_game = 0;
+int Stop_game = 0;
+int Reset_game = 0;
+int lastButtonState = 0; 
+int dropDownState = 0;
 long score = 0; 
 int MaxBalls = 5;
 long RecordScore;
 int gameOn = 0;
 int relay_count = 16;
-
-int relay[]={22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37}; //relay outout
-int point[]={40,41,42,43,44,45,46,47,48,49,50,51,52,53}; //inputs to collect points
-
-const int Start = 2;
-int Start_game = 0;
-const int Stop = 3;
-int Stop_game = 0;
-const int Reset = 4;
-int Reset_game = 0;
-
+int button = 0;
 int First_scan = 0;
+//Variavles for Left Drop Down
+int dropDownLTrack1 = 0;
+int dropDownLTrack2 = 0;
+int dropDownLTrack3 = 0;
+int dropDownLState1 = 0;
+int dropDownLState2 = 0;
+int dropDownLState3 = 0;
+//Variables for Right Drop Down
+int dropDownRTrack1 = 0;
+int dropDownRTrack2 = 0;
+int dropDownRTrack3 = 0;
+int dropDownRState1 = 0;
+int dropDownRState2 = 0;
+int dropDownRState3 = 0;
+//variables for Center? Drop Down
+int dropDownCTrack1 = 0;
+int dropDownCTrack2 = 0;
+int dropDownCTrack3 = 0;
+int dropDownCState1 = 0;
+int dropDownCState2 = 0;
+int dropDownCState3 = 0;
+
+
 void setup() {
   Serial.begin(9600);
   pinMode(Start, INPUT); //set Start pin as input
   pinMode(Reset, INPUT); //set Reset pin as input
   pinMode(Stop, INPUT);  //set Stop (ball lost) as input
-  
-  int i = 0;
-  for(i=0; i < 16; i++){
-    pinMode(relay[i], OUTPUT); //set relays pins as outputs
-  }
-  
-  int j = 0;
-  for(j=0; j < 15; j++){
-    pinMode(point[j], INPUT); //set point pins as inputs
-  }
-  lcd.begin();
-  lcd.backlight();
-  lcd.clear();
-  lcd.print("SPACE CATS");
-  lcd.setCursor(0,1);
-  lcd.print("Let's Play");
-  lcd.setCursor(0,2);
-  lcd.print("Please Wait");
-  delay(5000);
-  lcd.clear();
+  pinMode(dropDownLeft1, INPUT);
+  pinMode(dropDownLeft2, INPUT);
+  pinMode(dropDownLeft3, INPUT);
+  pinMode(dropDownLeftReset, OUTPUT);
+  pinMode(dropDownRight1, INPUT);
+  pinMode(dropDownRight2, INPUT);
+  pinMode(dropDownRight3, INPUT);
+  pinMode(dropDownRightReset, OUTPUT);
+  pinMode(dropDownCenter1, INPUT);
+  pinMode(dropDownCenter2, INPUT);
+  pinMode(dropDownCenter3, INPUT);
+  pinMode(dropDownCenterReset, OUTPUT);
+
+
+  myDisplay.begin();
+  myDisplay.print("SPACE CATS");
+  delay(1000);
+  myDisplay.print("Let's Play");
+  delay(1000);
+  myDisplay.print("Please Wait");
+  delay(1000);
+ 
 }
 
 void loop() {
   if(First_scan == 0){
-    lcd.clear();
+  myDisplay.displayClear();
     First_scan ++;
   }
-  lcd.setCursor(0,0);
-  lcd.print("Press Start");
+
+ myDisplay.print("Press Start");
   Start_game = digitalRead(Start);
   if(Start_game == HIGH){
     gameOn = 1;
-    lcd.clear();
-    lcd.print("Game starting");
+      myDisplay.displayClear();
+   myDisplay.print("Game starting");
     delay(2000);
-    lcd.clear();
+      myDisplay.displayClear();
   }
  
   if(gameOn == 1){
-    lcd.clear();
-    lcd.print("Game ON Get Ready!");  
+      myDisplay.displayClear();
+    myDisplay.print("Game ON Get Ready!");  
     //relese the ball
-    //MaxBalls --;
-    lcd.setCursor(0,1);
-    lcd.print("Balls left" );
-    lcd.print(MaxBalls);  
+    MaxBalls --;
+    myDisplay.print("Balls left" );
     delay(5000);
-    lcd.clear();
+    myDisplay.setTextAlignment(PA_RIGHT);
+    myDisplay.print(MaxBalls);  
+    delay(5000);
+    myDisplay.displayClear();
     game();
+    currentScore();
   }
   delay(1);
 }
 void game(){ 
   //game will happen here
+
+dropDownLeft();
+dropDownRight();
+dropDownCenter();
   Reset_game = digitalRead(Reset);
   while(Reset_game == HIGH){   //reset button has been pressed for 5s. and program going to main loop
-    lcd.clear();
-    lcd.print("Game reseting");   
-    delay(2500);
+    myDisplay.displayClear();
+    myDisplay.print("Game reseting");   
+    //delay(2500);
     gameOn = 0;
     return;
   }
   Stop_game = digitalRead(Stop); //lost ball
   if(Stop_game == 1){
-    lcd.clear();
-    lcd.print("Ball Lost!");
-    delay(5000);
+    myDisplay.displayClear();
+    myDisplay.print("Ball Lost!");
+    delay(1000);
+    myDisplay.print(MaxBalls);
+    delay(1000);
     MaxBalls --;
     gameOn = 1;
-    lcd.clear();
+    myDisplay.displayClear();
     Stop_game = digitalRead(Stop);
     if(MaxBalls == 0){
       GameOver();
     }
-    return;
+    
   }
-  ScoreDisplay();
+  currentScore();
+  
 }
 
-void ScoreDisplay(){
-  lcd.setCursor(5,0);
-  lcd.print("SPACE CATS");
-  lcd.setCursor(0,1);
-  lcd.print("SCORE:");  //Dispaly score
-  lcd.setCursor(6,1);
-  lcd.print(score);
-  lcd.setCursor(0,2);
-  lcd.print("Balls:");
-  lcd.setCursor(6,2);
-  lcd.print(MaxBalls);
+void dropDownLeft(){
+
+    dropDownLTrack1 = digitalRead(dropDownLeft1);
+    dropDownLTrack2 = digitalRead(dropDownLeft2);
+    dropDownLTrack3 = digitalRead(dropDownLeft3);
+  // compare the buttonState to its previous state
+  
+  if (dropDownLTrack1 != dropDownLState1) {
+    // if the state has changed, increment the counter
+    if (dropDownLTrack1 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+
+
+  if (dropDownLTrack2 != dropDownLState2) {
+    // if the state has changed, increment the counter
+    if (dropDownLTrack2 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+ if (dropDownLTrack3 != dropDownLState3) {
+    // if the state has changed, increment the counter
+    if (dropDownLTrack3 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+  dropDownLState1 = dropDownLTrack1;
+  dropDownLState2 = dropDownLTrack2;
+ dropDownLState3 = dropDownLTrack3;
+
+ if (dropDownLTrack1 == HIGH && dropDownLTrack2 == HIGH && dropDownLTrack3 == HIGH)
+ {
+   digitalWrite(dropDownLeftReset, HIGH);
+   delay(50);
+   digitalWrite(dropDownLeftReset, LOW);
+ }
+}
+
+
+
+void dropDownRight(){
+    dropDownRTrack1 = digitalRead(dropDownRight1);
+    dropDownRTrack2 = digitalRead(dropDownRight2);
+    dropDownRTrack3 = digitalRead(dropDownRight3);
+  // compare the buttonState to its previous state
+  
+  if (dropDownRTrack1 != dropDownRState1) {
+    // if the state has changed, increment the counter
+    if (dropDownRTrack1 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+
+
+  if (dropDownRTrack2 != dropDownRState2) {
+    // if the state has changed, increment the counter
+    if (dropDownRTrack2 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+ if (dropDownRTrack3 != dropDownRState3) {
+    // if the state has changed, increment the counter
+    if (dropDownRTrack3 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+  dropDownRState1 = dropDownRTrack1;
+  dropDownRState2 = dropDownRTrack2;
+ dropDownRState3 = dropDownRTrack3;
+
+ if (dropDownRTrack1 == HIGH && dropDownRTrack2 == HIGH && dropDownRTrack3 == HIGH)
+ {
+   digitalWrite(dropDownRightReset, HIGH);
+   delay(1000);
+   digitalWrite(dropDownRightReset, LOW);
+ }
+}
+
+void dropDownCenter(){
+    dropDownCTrack1 = digitalRead(dropDownCenter1);
+    dropDownCTrack2 = digitalRead(dropDownCenter2);
+    dropDownCTrack3 = digitalRead(dropDownCenter3);
+  // compare the buttonState to its previous state
+  
+  if (dropDownCTrack1 != dropDownCState1) {
+    // if the state has changed, increment the counter
+    if (dropDownCTrack1 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+
+
+  if (dropDownCTrack2 != dropDownCState2) {
+    // if the state has changed, increment the counter
+    if (dropDownCTrack2 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+ if (dropDownCTrack3 != dropDownCState3) {
+    // if the state has changed, increment the counter
+    if (dropDownCTrack3 == HIGH) {
+    score = score + 10000;
+  }
+    // Delay a little bit to avoid bouncing
+    delay(50);
+  }
+  // save the current state as the last state, for next time through the loop
+  dropDownCState1 = dropDownCTrack1;
+  dropDownCState2 = dropDownCTrack2;
+ dropDownCState3 = dropDownCTrack3;
+
+ if (dropDownCTrack1 == HIGH && dropDownCTrack2 == HIGH && dropDownCTrack3 == HIGH)
+ {
+   digitalWrite(dropDownCenterReset, HIGH);
+   delay(1000);
+   digitalWrite(dropDownCenterReset, LOW);
+ }
+}
+void claws(){
+  
+}
+void currentScore(){
+
+  myDisplay.setTextAlignment(PA_RIGHT);
+	myDisplay.print(score);
   game();
 }
 
 void GameOver(){
-  lcd.clear();
-  lcd.setCursor(5, 0);
-  lcd.print("GAME OVER");
-  lcd.setCursor(0, 1);
-  lcd.print("Score:");
-  lcd.setCursor(6, 0);
-  lcd.print(score);
-  RecordScore = EEPROM.read(1);
+  myDisplay.displayClear();
+  myDisplay.print("GAME OVER");
+  delay(2000);
+  myDisplay.print("Score:");
+  delay(2000);
+  myDisplay.print(score);
+  delay(2000);
+  //RecordScore = EEPROM.read(1);
   delayMicroseconds(10);
   if(score > RecordScore){
-    lcd.print("New Record!!");
+  myDisplay.print("New Record!!");
   //  digitalWrite(pin x, HIGH); //Do something with I/Os
-    lcd.setCursor(0, 1);
-    lcd.print(score);
-    EEPROM.update(1, score); //update record points to eeprom
+    //lcd.setCursor(0, 1);
+    //lcd.print(score);
+    //EEPROM.update(1, score); //update record points to eeprom
     delay(20); // wait 10s to do something
   }
   delay(5000);
@@ -155,9 +361,7 @@ void GameOver(){
 void ResetGame(){
   score = 0;
   MaxBalls = 5;
-  lcd.setCursor(0,0);
-  lcd.print("SPACE CATS");  //Game reset
-  lcd.setCursor(0,1);
-  lcd.print("Let's Play!");
+  myDisplay.print("SPACE CATS");  //Game reset
+  myDisplay.print("Let's Play!");
   gameOn = 0;
 }
