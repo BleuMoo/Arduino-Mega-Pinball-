@@ -1,11 +1,13 @@
 #include <Arduino.h>
 #include "sensor.h"
 
-sensor::sensor(int sensor)
+sensor::sensor(int sensor, int sensorSound)
 {
   pinMode(sensor, INPUT);
+  pinMode(sensorSound, OUTPUT);
 
   _sensor = sensor;
+  _sensorSound = sensorSound;
 
 }
 
@@ -19,6 +21,9 @@ void sensor::sensorRead()
     if (sensorTrack == HIGH) {
     score = score + point;
     Serial.println("DING");
+    digitalWrite(_sensorSound, HIGH);
+    delay(50);
+    digitalWrite(_sensorSound, LOW);
   }
     // Delay a little bit to avoid bouncing
     delay(50);

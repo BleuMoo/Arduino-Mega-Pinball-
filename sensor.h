@@ -7,12 +7,13 @@ extern int point;
 class sensor
 {
   public:
-  sensor(int sensor);
+  sensor(int sensor, int sensorSound);
   void sensorRead();
 
   private:
   int sensorTrack =0 ;
   int _sensor;
+  int _sensorSound;
   int sensorState = 0;
 };
 #endif

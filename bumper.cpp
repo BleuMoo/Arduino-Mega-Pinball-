@@ -1,11 +1,14 @@
 #include <Arduino.h>
 #include "bumper.h"
 
-bumper::bumper(int bumper)
+bumper::bumper(int bumper, int bumperReset, int bumperSound)
 {
   pinMode(bumper, INPUT);
-
+  pinMode(bumperReset, OUTPUT);
+  pinMode(bumperSound, OUTPUT);
+  _bumperReset = bumperReset;
   _bumper = bumper;
+  _bumperSound = bumperSound;
 
 }
 
@@ -19,10 +22,16 @@ void bumper::bumperRead()
     if (bumperTrack == HIGH) {
     score = score + point;
     Serial.println("DWAY");
-  }
-    // Delay a little bit to avoid bouncing
+    //delay(10);
+    digitalWrite(_bumperReset, HIGH);
+    digitalWrite(_bumperSound, HIGH);
     delay(50);
+    digitalWrite(_bumperReset, LOW);
+    digitalWrite(_bumperSound, LOW);
+  }
+      delay(50);
   }
    bumperState = bumperTrack;
+
   return;
 }

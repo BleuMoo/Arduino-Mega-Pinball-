@@ -7,12 +7,13 @@ extern int point;
 class kicker
 {
   public:
-  kicker(int kicker);
+  kicker(int kicker,int kickerSound);
   void kickerRead();
 
   private:
   int kickerTrack =0 ;
   int _kicker;
+  int _kickerSound;
   int kickerState = 0;
 };
 #endif

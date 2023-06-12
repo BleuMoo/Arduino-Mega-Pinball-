@@ -1,16 +1,18 @@
 #include <Arduino.h>
 #include "dropDown.h"
 
-dropDown::dropDown(int drop1, int drop2, int drop3, int dropReset)
+dropDown::dropDown(int drop1, int drop2, int drop3, int dropReset, int dropSound)
 {
   pinMode(drop1, INPUT);
   pinMode(drop2, INPUT);
   pinMode(drop3, INPUT);
   pinMode(dropReset, OUTPUT);
+  pinMode(dropSound, OUTPUT);
   _drop1 = drop1;
   _drop2 = drop2;
   _drop3 = drop3;
   _dropReset = dropReset;
+   _dropSound = dropSound;
 }
 
 void dropDown::targets()
@@ -64,6 +66,12 @@ void dropDown::reset()
  {
    digitalWrite(_dropReset, HIGH);
    delay(50);
+   digitalWrite(_dropSound, HIGH);
+   delay(10);
    digitalWrite(_dropReset, LOW);
+   delay(10);
+   digitalWrite(_dropSound, LOW);
+   Serial.println("drop down reset");
   }
+
 }

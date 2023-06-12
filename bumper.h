@@ -7,12 +7,14 @@ extern int point;
 class bumper
 {
   public:
-  bumper(int bumper);
+  bumper(int bumper, int bumperReset, int bumperSound);
   void bumperRead();
 
   private:
   int bumperTrack =0 ;
   int _bumper;
   int bumperState = 0;
+  int _bumperReset;
+  int _bumperSound;
 };
 #endif
